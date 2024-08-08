@@ -24,11 +24,30 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
+    <style>
+      /* Tooltip styling */
+      .tooltip {
+        position: absolute;
+        text-align: center;
+        padding: 5px;
+        font-size: 12px;
+        background: #333;
+        color: #fff;
+        border-radius: 3px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .tooltip.visible {
+        opacity: 1;
+      }
+    </style>
     <title>React App</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <div class="tooltip" id="tooltip"></div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
