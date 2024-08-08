@@ -4,6 +4,8 @@ import * as d3 from 'd3';
 
 function App() {
     const [nodes, setNodes] = useState([]);
+    const [selectedNode, setSelectedNode] = useState(null);
+    const [inputValue, setInputValue] = useState('');
 
     // Fetch nodes from the backend API
     useEffect(() => {
@@ -16,6 +18,29 @@ function App() {
                 console.error("There was an error fetching the nodes!", error);
             });
     }, []);
+
+    // Handle input change
+    const handleInputChange = (event) => {
+        setInputValue(event.target.value);
+    };
+
+    // Fetch and display node data based on input value
+    const handleSearch = () => {
+        axios.get('http://localhost:8080/api/v1/fetch-node', { params: { ip: inputValue } })
+            .then(response => {
+                const fetchedNodes = response.data;
+                setNodes(fetchedNodes);
+                renderGraph(fetchedNodes);
+                if (fetchedNodes.length > 0) {
+                    setSelectedNode(fetchedNodes[0]); // Display details of the first fetched node
+                } else {
+                    setSelectedNode(null); // Clear selection if no nodes are found
+                }
+            })
+            .catch(error => {
+                console.error("There was an error fetching the node!", error);
+            });
+    };
 
     const renderGraph = (nodesData) => {
         const svg = d3.select("svg");
@@ -82,6 +107,12 @@ function App() {
     return (
         <div className="App">
             <h1>Graph Nodes</h1>
+
+            <svg width="600" height="400"></svg> {/* This SVG will be used for D3.js rendering */}
+
+            {/* Tooltip element */}
+            <div className="tooltip" id="tooltip"></div>
+
             <ul>
                 {nodes.map((node, index) => (
                     <li key={index}>
@@ -90,7 +121,22 @@ function App() {
                     </li>
                 ))}
             </ul>
-            <svg width="600" height="400"></svg> {/* This SVG will be used for D3.js rendering */}
+
+            <input
+                type="text"
+                placeholder="Enter node IP"
+                value={inputValue}
+                onChange={handleInputChange}
+            />
+            <button onClick={handleSearch}>Search</button>
+
+            {selectedNode && (
+                <div className="node-details">
+                    <h2>Node Details</h2>
+                    <p><strong>ID:</strong> {selectedNode.ip}</p>
+                    <p><strong>Name:</strong> {selectedNode.name}</p>
+                </div>
+            )}
         </div>
     );
 }
