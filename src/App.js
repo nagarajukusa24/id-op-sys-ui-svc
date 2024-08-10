@@ -10,6 +10,7 @@ function App() {
     const [graphData, setGraphData] = useState({ nodes: [], links: [] });
     const [nodeCount, setNodeCount] = useState(0);
     const [relationCount, setRelationCount] = useState(0);
+    const [relationType, setRelationType] = useState('');
 
     useEffect(() => {
         axios.get('http://localhost:8080/api/v1/fetch-nodes')
@@ -35,6 +36,22 @@ function App() {
             }).catch(error => {
                 console.error("There was an error fetching the node!", error);
             });
+    };
+
+    const handleRelationSearch = () => {
+        axios.get('http://localhost:8080/api/v1/fetch-node-by-relation', { params: { relationType: relationType } })
+            .then(response => {
+                const fetchedNodes = response.data;
+                setNodes(fetchedNodes);
+                renderNodes(fetchedNodes);
+                if (fetchedNodes.length > 0) {
+                    setSelectedNode(fetchedNodes[0]); // Display details of the first fetched node
+                } else {
+                    setSelectedNode(null); // Clear selection if no nodes are found
+                }
+            }).catch(error => {
+            console.error("There was an error fetching the nodes by relation type!", error);
+        });
     };
 
     useEffect(() => {
@@ -98,6 +115,11 @@ function App() {
     const handleInputChange = (event) => {
         setInputValue(event.target.value);
     };
+
+    const handleRelationTypeChange = (event) => {
+        setRelationType(event.target.value);
+    };
+
 
     const renderGraphWithRelations = (nodesData, linksData) => {
         const svg = d3.select("#nodeWithRelations");
@@ -316,18 +338,19 @@ function App() {
                                 <input
                                     type="text"
                                     className="form-control"
-                                    value={inputValue}
-                                    onChange={handleInputChange}
+                                    value={relationType}
+                                    onChange={handleRelationTypeChange}
                                     placeholder="Enter Relation type"
                                 />
                                 <div className="input-group-append">
-                                    <button className="btn btn-primary" onClick={handleSearch}>Search</button>
+                                    <button className="btn btn-primary" onClick={handleRelationSearch}>Search</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
             <br/>
             <div className="card mb-4">
                 <div className="card-body">
