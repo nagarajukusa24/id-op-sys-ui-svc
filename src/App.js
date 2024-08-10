@@ -28,7 +28,7 @@ function App() {
             .then(response => {
                 const fetchedNodes = response.data;
                 setNodes(fetchedNodes);
-                renderGraph(fetchedNodes);
+                renderGraphForAllNodes(fetchedNodes);
                 if (fetchedNodes.length > 0) {
                     setSelectedNode(fetchedNodes[0]); // Display details of the first fetched node
                 } else {
@@ -48,9 +48,9 @@ function App() {
 
 
 
-    useEffect(() => {
-        fetchGraphData();
-    }, []);
+    // useEffect(() => {
+    //     fetchGraphData();
+    // }, []);
 
     const transformData = (data) => {
         const nodes = [];
@@ -67,7 +67,7 @@ function App() {
                     nodeMap.set(connectedNode.ip, connectedNode);
                     nodes.push({ id: connectedNode.ip, label: connectedNode.name });
                 }
-                links.push({ source: node.ip, target: connectedNode.ip });
+                links.push({ source: node.ip, target: connectedNode.ip, type: "IS_ALLOWED" }); // Add a relationship type
                 traverse(connectedNode);
             });
         };
@@ -77,28 +77,28 @@ function App() {
         return { nodes, links };
     };
 
-    const fetchGraphData = () => {
-        axios.get('http://localhost:8080/api/v1/fetch-graph')
-            .then(response => {
-                const fetchedData = response.data;
-
-                const { nodes: nodesData, links: linksData } = transformData(fetchedData);
-
-                setNodes(nodesData);
-                setLinks(linksData);
-                setGraphData({ nodes: nodesData, links: linksData });
-                renderGraphWithRelations(nodesData, linksData);
-            })
-            .catch(error => {
-                console.error("There was an error fetching the graph data!", error);
-            });
-    };
+    // const fetchGraphData = () => {
+    //     axios.get('http://localhost:8080/api/v1/fetch-graph')
+    //         .then(response => {
+    //             const fetchedData = response.data;
+    //
+    //             const { nodes: nodesData, links: linksData } = transformData(fetchedData);
+    //
+    //             setNodes(nodesData);
+    //             setLinks(linksData);
+    //             setGraphData({ nodes: nodesData, links: linksData });
+    //             renderGraphWithRelations(nodesData, linksData);
+    //         })
+    //         .catch(error => {
+    //             console.error("There was an error fetching the graph data!", error);
+    //         });
+    // };
 
     const handleInputChange = (event) => {
         setInputValue(event.target.value);
     };
 
-    const renderGraph = (nodesData) => {
+    const renderGraphWithRelations = (nodesData, linksData) => {
         const svg = d3.select("svg");
         svg.selectAll("*").remove(); // Clear previous graph
 
@@ -108,6 +108,25 @@ function App() {
         const simulation = d3.forceSimulation(nodesData)
             .force("charge", d3.forceManyBody())
             .force("center", d3.forceCenter(width / 2, height / 2));
+
+        const link = svg.append("g")
+            .attr("stroke", "#999")
+            .attr("stroke-opacity", 0.6)
+            .selectAll("line")
+            .data(linksData)
+            .enter().append("line")
+            .attr("stroke-width", 1)
+            .attr("stroke", "#aaa");
+
+        const linkText = svg.append("g")
+            .attr("class", "link-label")
+            .selectAll("text")
+            .data(linksData)
+            .enter().append("text")
+            .attr("dy", -3)
+            .attr("text-anchor", "middle")
+            .style("font-size", "12px")
+            .text(d => d.type); // Display the relationship type
 
         const node = svg.append("g")
             .attr("stroke", "#fff")
@@ -137,6 +156,16 @@ function App() {
             .text(d => d.name);
 
         simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            linkText
+                .attr("x", d => (d.source.x + d.target.x) / 2)
+                .attr("y", d => (d.source.y + d.target.y) / 2);
+
             node
                 .attr("cx", d => d.x)
                 .attr("cy", d => d.y);
@@ -161,7 +190,7 @@ function App() {
     };
 
     const renderGraphForAllNodes = (nodesData) => {
-        const svg = d3.select("svg");
+        const svg = d3.select("#allNodes");
         svg.selectAll("*").remove(); // Clear previous graph
 
         const width = +svg.attr("width");
@@ -222,7 +251,7 @@ function App() {
         }
     };
 
-    const renderGraphWithRelations = (nodesData, linksData) => {
+    const renderGraph = (nodesData, linksData) => {
         const svg = d3.select("svg");
         svg.selectAll("*").remove(); // Clear previous graph
 
@@ -315,6 +344,7 @@ function App() {
                     </li>
                 ))}
             </ul>
+            <svg id="allNodes" width="600" height="400"></svg>
 
             <input
                 type="text"
@@ -334,8 +364,8 @@ function App() {
 
             <svg width="600" height="400"></svg>
 
-            <h1>Graph Visualization</h1>
-            <Graph />
+            {/*<h1>Graph Visualization</h1>*/}
+            {/*<Graph />*/}
 
             <h2>Graph with Relations</h2>
             <GraphWithRelations nodes={graphData.nodes} links={graphData.links} />
