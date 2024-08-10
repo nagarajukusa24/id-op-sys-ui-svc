@@ -45,8 +45,7 @@ function App() {
                 const { nodes: nodesData, links: linksData } = transformData(fetchedData);
                 setGraphData({ nodes: nodesData, links: linksData });
                 renderGraphWithRelations(nodesData, linksData);
-            })
-            .catch(error => {
+            }).catch(error => {
                 console.error("There was an error fetching the graph data!", error);
             });
     }, []);
@@ -104,14 +103,14 @@ function App() {
         const svg = d3.select("#nodeWithRelations");
         svg.selectAll("*").remove(); // Clear previous graph
 
-        const width = +svg.attr("width");
-        const height = +svg.attr("height");
+        const width = svg.node().getBoundingClientRect().width;
+        const height = svg.node().getBoundingClientRect().height;
 
         const simulation = d3.forceSimulation(nodesData)
-            .force("charge", d3.forceManyBody())
+            .force("charge", d3.forceManyBody().strength(-100))
             .force("center", d3.forceCenter(width / 2, height / 2))
-            .force("link", d3.forceLink(linksData).id(d => d.id).distance(100))
-            .force("collide", d3.forceCollide().radius(30).iterations(2));
+            .force("link", d3.forceLink(linksData).id(d => d.id).distance(150))
+            .force("collide", d3.forceCollide().radius(50).iterations(2));
 
         const link = svg.append("g")
             .attr("stroke", "#999")
@@ -141,11 +140,12 @@ function App() {
             .attr("r", 25)
             .attr("fill", "#69b3a2")
             .on("mouseover", (event, d) => {
+                console.log(d)
                 d3.select("#tooltip")
                     .style("left", `${event.pageX + 5}px`)
                     .style("top", `${event.pageY - 28}px`)
                     .style("opacity", 1)
-                    .html(`<strong>ID:</strong> ${d.id}<br /><strong>Name:</strong> ${d.label}`);
+                    .html(`<strong>IP:</strong> ${d.id}<br /><strong>Name:</strong> ${d.label}<br />`);
             })
             .on("mouseout", () => {
                 d3.select("#tooltip")
@@ -176,7 +176,7 @@ function App() {
         });
 
         function dragstarted(event, d) {
-            if (!event.active) simulation.alphaTarget(0.8).restart();
+            if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
@@ -187,18 +187,23 @@ function App() {
         }
 
         function dragended(event, d) {
-            if (!event.active) simulation.alphaTarget(0.5);
+            if (!event.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;
         }
     };
 
+    useEffect(() => {
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .attr("id", "tooltip");
+    }, []);
     const renderNodes = (nodesData) => {
         const svg = d3.select("#nodes");
         svg.selectAll("*").remove(); // Clear previous graph
 
-        const width = +svg.attr("width");
-        const height = +svg.attr("height");
+        const width = svg.node().getBoundingClientRect().width;
+        const height = svg.node().getBoundingClientRect().height;
 
         const simulation = d3.forceSimulation(nodesData)
             .force("charge", d3.forceManyBody())
@@ -218,8 +223,12 @@ function App() {
                     .style("left", `${event.pageX + 5}px`)
                     .style("top", `${event.pageY - 28}px`)
                     .style("opacity", 1)
-                    .html(`<strong>ID:</strong> ${d.ip}<br /><strong>Name:</strong> ${d.name}`);
+                    .html(`
+            <strong>IP:</strong> ${d.ip}<br />
+            <strong>Name:</strong> ${d.name}<br />
+        `);
             })
+
             .on("mouseout", () => {
                 d3.select("#tooltip")
                     .style("opacity", 0);
@@ -230,7 +239,7 @@ function App() {
                 .on("end", dragended));
 
         node.append("title")
-            .text(d => d.name);
+            .text(d => d.label);
 
         simulation.on("tick", () => {
             node
@@ -257,41 +266,99 @@ function App() {
     };
 
     return (
-        <div className="App">
-            <h1>Total Nodes in Graph Database: {nodeCount}</h1>
-            <h1>Total Relations in Graph Database: {relationCount}</h1>
-            <h1>Graph Nodes</h1>
-            <div className="tooltip" id="tooltip"></div>
-            <ul>
-                {nodes.map((node, index) => (
-                    <li key={index}>
-                        <strong>IP:</strong> {node.ip} <br />
-                        <strong>Name:</strong> {node.name}
-                    </li>
-                ))}
-            </ul>
-
-            <svg id="nodes" width="600" height="400"></svg>
-
-            <h1>Search by IP</h1>
-            <input
-                type="text"
-                placeholder="Enter node IP"
-                value={ inputValue }
-                onChange={ handleInputChange }
-            />
-            <button onClick={ handleSearch }>Search</button>
-
-            {selectedNode && (
-                <div className="node-details">
-                    <h2>Node Details</h2>
-                    <p><strong>IP:</strong> {selectedNode.ip}</p>
-                    <p><strong>Name:</strong> {selectedNode.name}</p>
+        <div className="container mt-4">
+            <div className="card mb-4">
+                <div className="card-body">
+                    <h1 align="center" className="card-title">IDFC First Bank - OnPrem System Dashboard</h1>
                 </div>
-            )}
+            </div>
 
-            <h2>Graph with Relations</h2>
-            <svg id="nodeWithRelations" width="600" height="400"></svg>
+            <div className="row">
+                <div className="col-md-6">
+                    <div className="card">
+                        <div className="card-body">
+                            <h2 className="card-title">Node and Relation Counter</h2>
+                            <p>
+                                <h5>Number of Nodes: {nodeCount}</h5>
+                                <h5>Number of Relationships: {relationCount}</h5>
+                            </p>
+                            <p></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br/>
+            <div className="row">
+                <div className="col-md-6">
+                    <div className="card">
+                        <div className="card-body">
+                            <h2 className="card-title">Search Node by IP</h2>
+                            <div className="input-group mb-3">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={inputValue}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter node IP"
+                                />
+                                <div className="input-group-append">
+                                    <button className="btn btn-primary" onClick={handleSearch}>Search</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-6">
+                    <div className="card">
+                        <div className="card-body">
+                            <h2 className="card-title">Search Nodes by Relationships</h2>
+                            <div className="input-group mb-3">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={inputValue}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter Relation type"
+                                />
+                                <div className="input-group-append">
+                                    <button className="btn btn-primary" onClick={handleSearch}>Search</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br/>
+            <div className="card mb-4">
+                <div className="card-body">
+                    <h2 className="card-title">Node Details</h2>
+                    {selectedNode ? (
+                        <div>
+                            <p><strong>ID:</strong> {selectedNode.ip}</p>
+                            <p><strong>Name:</strong> {selectedNode.name}</p>
+                            <p><strong>Connected Nodes:</strong> {selectedNode.connectedNodes.map(node => node.ip).join(', ')}</p>
+                        </div>
+                    ) : (
+                        <p>Select a node to see details</p>
+                    )}
+                </div>
+            </div>
+            <div className="card mb-4">
+                <div className="card-body">
+                    <h2 className="card-title">All Nodes</h2>
+                    <svg id="nodes" width="100%" height="500"></svg>
+                </div>
+            </div>
+            <div className="card mb-4">
+                <div className="card-body">
+                    <h2 className="card-title">Graph with Relations</h2>
+                    <svg id="nodeWithRelations" width="100%" height="500"></svg>
+                </div>
+            </div>
+            <div>
+                <svg id="nodes" width="400" height="200"></svg>
+                <div className="tooltip" id="tooltip"></div>
+            </div>
         </div>
     );
 }
